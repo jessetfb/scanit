@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "@capacitor/electron": "^2.5.0",
+    "electron": "^36.5.0"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.0"
+  }
+}
