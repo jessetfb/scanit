@@ -73,7 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 <body>
     <div class="login-container">
-        <h2 class="text-center mb-4">Login to ScanIt</h2>
+        <h2 class="text-center mb-4">Login to Scanit</h2>
 
         <?php if ($error): ?>
             <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
