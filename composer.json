@@ -1,12 +1,11 @@
 {
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/endroid/qr-code-writer-png.git"
-        }
-    ],
     "require": {
-        "endroid/qr-code": "^5.0",
-        "endroid/qr-code-writer-png": "^4.0"
+        "endroid/qr-code": "^4.8",
+        "endroid/qr-code-bundle": "^4.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "endroid/installer": true
+        }
     }
 }
