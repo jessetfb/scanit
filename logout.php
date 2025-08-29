@@ -2,7 +2,7 @@
 session_start();
 
 // Clear all session variables
-$_SESSION = array();
+$_SESSION = [];
 
 // Delete the session cookie if it exists
 if (ini_get("session.use_cookies")) {
@@ -16,8 +16,8 @@ if (ini_get("session.use_cookies")) {
 // Destroy the session completely
 session_destroy();
 
-// 🔴 Don't regenerate after destroying – it causes the warning!
-// If you want to regenerate IDs for security, do it at login, not logout.
+// 🚫 Do NOT regenerate ID here
+// session_regenerate_id(true); <-- remove this line
 
 // Redirect to login
 header("Location: http://localhost/scanit/login.php");
