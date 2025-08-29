@@ -1,15 +1,26 @@
 FROM php:8.3-apache
 
-# Install the necessary library for PostgreSQL
-# libpq-dev is required to build the pdo_pgsql extension.
-RUN apt-get update && apt-get install -y libpq-dev \
-    # Clean up APT caches to reduce image size
-    && rm -rf /var/lib/apt/lists/*
+# Install necessary system dependencies for Composer
+RUN apt-get update && apt-get install -y \
+    git \
+    libzip-dev \
+    unzip \
+&& rm -rf /var/lib/apt/lists/*
 
-# Install the pdo_pgsql PHP extension
-RUN docker-php-ext-install pdo pdo_pgsql
+# Install PHP extensions
+RUN docker-php-ext-install pdo pdo_pgsql zip
 
-# Copy your application files into the container
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy composer files and install dependencies
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader
+
+# Copy the rest of the application code
 COPY . /var/www/html/
 
 # Expose port 80 for the web server

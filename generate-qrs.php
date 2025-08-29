@@ -1,15 +1,13 @@
 <?php
 // generate-qrs.php
-// Admin page to generate and display QR codes for checkpoints of a specific assignment.
-
 session_start();
 require_once 'db.php';
-require_once __DIR__ . '/vendor/autoload.php'; // Ensure Composer autoload is correctly set up
+require_once 'vendor/autoload.php';
 
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Encoding\Encoding;
-use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
+use Endroid\QrCode\ErrorCorrectionLevel; // <-- CORRECTED: Use the main class
 
 // Only admin can access
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -43,18 +41,17 @@ $checkpoints = $stmt_checkpoints->fetchAll();
 $qrCodes = [];
 
 foreach ($checkpoints as $checkpoint) {
-    // CRITICAL CHANGE: Embed only the checkpoint ID in the QR code.
-    // The scanning app will then send this ID to the server.
-    $data_to_encode = (string)$checkpoint['id']; // Cast to string for QR code data
+    // Embed only the checkpoint ID in the QR code.
+    $data_to_encode = (string)$checkpoint['id'];
 
     try {
         $result = Builder::create()
             ->writer(new PngWriter())
-            ->data($data_to_encode) // Embed only the ID
+            ->data($data_to_encode)
             ->encoding(new Encoding('UTF-8'))
-            ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
-            ->size(300) // QR code size
-            ->margin(10) // Margin around QR code
+            ->errorCorrectionLevel(ErrorCorrectionLevel::High) // <-- CORRECTED: Use the constant
+            ->size(300)
+            ->margin(10)
             ->build();
 
         // Get image data as base64 string
@@ -65,12 +62,10 @@ foreach ($checkpoints as $checkpoint) {
         ];
 
     } catch (Throwable $e) {
-        // Log or display error for QR generation issues
         error_log('Error generating QR for checkpoint ID ' . $checkpoint['id'] . ': ' . $e->getMessage());
-        // Add a placeholder or error message for the user
         $qrCodes[] = [
             'checkpoint_name' => $checkpoint['name'],
-            'image' => null, // Indicate failure
+            'image' => null,
             'error' => 'Failed to generate QR code.'
         ];
     }
