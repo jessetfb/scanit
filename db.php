@@ -3,10 +3,10 @@
 
 // Get database credentials from Render's environment variables
 // The getenv() function retrieves the VALUE of the variable, not the name itself.
-$host = getenv('dpg-d2o2v7vfte5s738ava9g-a');
-$dbname = getenv('scanit_s42d');
-$user = getenv('scanit_s42d_user');
-$pass = getenv('Gi0VUoG2HSkRW743AEddojRVy8o4M90k');
+$host = getenv('PGHOST');
+$dbname = getenv('PGDATABASE');
+$user = getenv('PGUSER');
+$pass = getenv('PGPASSWORD');
 
 try {
     // Create a new PDO instance using the PostgreSQL DSN
