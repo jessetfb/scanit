@@ -20,5 +20,6 @@ session_destroy();
 // session_regenerate_id(true); <-- remove this line
 
 // Redirect to login
-header("Location: http://localhost/scanit/login.php");
+header("Location: https://scanit-fnex.onrender.com/login.php");
 exit;
+
