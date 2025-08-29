@@ -14,6 +14,7 @@ if (ini_get("session.use_cookies")) {
 }
 
 // Destroy the session completely
+//iii
 session_destroy();
 
 // Regenerate a fresh session ID
