@@ -6,10 +6,12 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     unzip \
     libpq-dev \
+    libpng-dev \
+    libjpeg-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo pdo_pgsql zip
+RUN docker-php-ext-install pdo pdo_pgsql zip gd
 
 # Set the working directory
 WORKDIR /var/www/html
@@ -18,7 +20,7 @@ WORKDIR /var/www/html
 COPY . /var/www/html/
 
 # Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:latest /usr/local/bin/composer /usr/local/bin/composer
 
 # Run Composer to install dependencies
 RUN composer install --no-dev --optimize-autoloader
