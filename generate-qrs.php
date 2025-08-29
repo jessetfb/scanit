@@ -2,12 +2,19 @@
 // generate-qrs.php
 session_start();
 require_once 'db.php';
-require_once 'vendor/autoload.php';
+
+// Composer autoloader
+$autoloadPath = __DIR__ . '/vendor/autoload.php';
+if (file_exists($autoloadPath)) {
+    require_once $autoloadPath;
+} else {
+    die("Composer autoload not found. Run <code>composer install</code> first.");
+}
 
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Encoding\Encoding;
-use Endroid\QrCode\ErrorCorrectionLevel; // <-- CORRECTED: Use the main class
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh; // ✅ Correct class
 
 // Only admin can access
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -15,8 +22,8 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// Get assignment ID from query string
-$assignment_id = $_GET['assignment_id'] ?? null;
+// Get assignment ID safely
+$assignment_id = isset($_GET['assignment_id']) ? intval($_GET['assignment_id']) : null;
 if (!$assignment_id) {
     header("Location: dashboard.php?error=no_assignment_id_for_qrs");
     exit;
@@ -49,7 +56,7 @@ foreach ($checkpoints as $checkpoint) {
             ->writer(new PngWriter())
             ->data($data_to_encode)
             ->encoding(new Encoding('UTF-8'))
-            ->errorCorrectionLevel(ErrorCorrectionLevel::High) // <-- CORRECTED: Use the constant
+            ->errorCorrectionLevel(new ErrorCorrectionLevelHigh()) // ✅ Correct usage
             ->size(300)
             ->margin(10)
             ->build();
@@ -66,11 +73,12 @@ foreach ($checkpoints as $checkpoint) {
         $qrCodes[] = [
             'checkpoint_name' => $checkpoint['name'],
             'image' => null,
-            'error' => 'Failed to generate QR code.'
+            'error' => 'Failed to generate QR code. (' . htmlspecialchars($e->getMessage()) . ')'
         ];
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
