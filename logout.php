@@ -14,11 +14,10 @@ if (ini_get("session.use_cookies")) {
 }
 
 // Destroy the session completely
-//iii
 session_destroy();
 
-// Regenerate a fresh session ID
-session_regenerate_id(true);
+// 🔴 Don't regenerate after destroying – it causes the warning!
+// If you want to regenerate IDs for security, do it at login, not logout.
 
 // Redirect to login
 header("Location: http://localhost/scanit/login.php");
