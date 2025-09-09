@@ -19,12 +19,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignment_id'])) {
 
     if ($assignment_id > 0) {
         try {
-            // Delete the assignment. Due to FOREIGN KEY constraints with ON DELETE CASCADE
-            // on 'checkpoints' and 'user_assignments', related records in those tables
-            // will be automatically deleted.
-            // For 'logs', the assignment_id will be set to NULL due to ON DELETE SET NULL.
+            // Start transaction for safety
+            $pdo->beginTransaction();
+
+            // Delete related user assignments first
+            $stmt = $pdo->prepare("DELETE FROM user_assignments WHERE assignment_id = ?");
+            $stmt->execute([$assignment_id]);
+
+            // Delete related checkpoints
+            $stmt = $pdo->prepare("DELETE FROM checkpoints WHERE assignment_id = ?");
+            $stmt->execute([$assignment_id]);
+
+            // Set assignment_id = NULL in logs (if ON DELETE SET NULL not in schema)
+            $stmt = $pdo->prepare("UPDATE logs SET assignment_id = NULL WHERE assignment_id = ?");
+            $stmt->execute([$assignment_id]);
+
+            // Finally delete the assignment itself
             $stmt = $pdo->prepare("DELETE FROM assignments WHERE id = ?");
             $stmt->execute([$assignment_id]);
+
+            $pdo->commit();
 
             if ($stmt->rowCount() > 0) {
                 $message = "Assignment and its associated data deleted successfully.";
@@ -34,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignment_id'])) {
                 $message_type = 'danger';
             }
         } catch (PDOException $e) {
+            $pdo->rollBack();
             $message = "Database error: " . $e->getMessage();
             $message_type = 'danger';
         }
