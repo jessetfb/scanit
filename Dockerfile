@@ -1,5 +1,7 @@
+FROM composer:2 AS composer_stage
+
 FROM php:8.3-apache
-#render
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
@@ -12,28 +14,28 @@ RUN apt-get update && apt-get install -y \
     libwebp-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure and install PHP extensions
+# Configure GD and install PHP extensions
 RUN docker-php-ext-configure gd \
-        --with-jpeg \
-        --with-freetype \
-        --with-webp \
-    && docker-php-ext-install -j$(nproc) \
-        pdo \
-        pdo_pgsql \
-        zip \
-        gd
+    --with-jpeg \
+    --with-freetype \
+    --with-webp \
+ && docker-php-ext-install -j$(nproc) \
+    pdo \
+    pdo_pgsql \
+    zip \
+    gd
 
-# Enable Apache mod_rewrite
+# Enable Apache modules
 RUN a2enmod rewrite
 
-# Set the working directory
+# Set working directory
 WORKDIR /var/www/html
 
-# Copy all application files
+# Copy app files
 COPY . /var/www/html/
 
-# Install Composer
-COPY --from=composer:latest /usr/local/bin/composer /usr/local/bin/composer
+# Copy composer from first stage
+COPY --from=composer_stage /usr/bin/composer /usr/local/bin/composer
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
