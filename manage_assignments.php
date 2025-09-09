@@ -1,100 +1,136 @@
 <?php
-// manage_assignments.php
+// delete_assignment.php
 
-session_start();
+require_once 'check_auth.php';
 require_once 'db.php';
 
-// Initialize flash message
-$flash_message = null;
-
-// Handle delete action
-if (isset($_GET['delete'])) {
-    $assignment_id = (int) $_GET['delete'];
-
-    try {
-        // Delete assignment
-        $stmt = $pdo->prepare("DELETE FROM assignments WHERE id = ?");
-        $stmt->execute([$assignment_id]);
-
-        if ($stmt->rowCount() > 0) {
-            $flash_message = [
-                "type" => "success",
-                "text" => "Assignment deleted successfully."
-            ];
-        } else {
-            $flash_message = [
-                "type" => "danger",
-                "text" => "Assignment not found."
-            ];
-        }
-
-    } catch (PDOException $e) {
-        // Catch foreign key violation
-        if ($e->getCode() == "23503") {
-            $flash_message = [
-                "type" => "danger",
-                "text" => "Cannot delete assignment: it has linked records (users, logs, or checkpoints)."
-            ];
-        } else {
-            $flash_message = [
-                "type" => "danger",
-                "text" => "Error deleting assignment: " . $e->getMessage()
-            ];
-        }
-    }
+// Ensure only admin can access this script
+if ($_SESSION['role'] !== 'admin') {
+    header("Location: dashboard.php");
+    exit;
 }
 
-// Fetch all assignments
-$stmt = $pdo->query("SELECT * FROM assignments ORDER BY id DESC");
-$assignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignment_id'])) {
+    $assignmentId = filter_var($_POST['assignment_id'], FILTER_VALIDATE_INT);
+
+    if ($assignmentId === false) {
+        $_SESSION['flash_message'] = "Invalid assignment ID.";
+        $_SESSION['flash_message_type'] = "danger";
+        header("Location: manage_assignments.php");
+        exit;
+    }
+
+    try {
+        // Start a transaction to ensure all or nothing happens
+        $pdo->beginTransaction();
+
+        // Step 1: Delete records from the child table 'user_assignments'
+        $sqlDeleteUserAssignments = "DELETE FROM user_assignments WHERE assignment_id = ?";
+        $stmtDeleteUserAssignments = $pdo->prepare($sqlDeleteUserAssignments);
+        $stmtDeleteUserAssignments->execute([$assignmentId]);
+
+        // Step 2: Delete records from the child table 'checkpoints'
+        $sqlDeleteCheckpoints = "DELETE FROM checkpoints WHERE assignment_id = ?";
+        $stmtDeleteCheckpoints = $pdo->prepare($sqlDeleteCheckpoints);
+        $stmtDeleteCheckpoints->execute([$assignmentId]);
+
+        // Step 3: Delete the assignment from the parent table 'assignments'
+        $sqlDeleteAssignment = "DELETE FROM assignments WHERE id = ?";
+        $stmtDeleteAssignment = $pdo->prepare($sqlDeleteAssignment);
+        $stmtDeleteAssignment->execute([$assignmentId]);
+
+        // If all queries were successful, commit the transaction
+        $pdo->commit();
+
+        $_SESSION['flash_message'] = "Assignment and all related data deleted successfully. 👍";
+        $_SESSION['flash_message_type'] = "success";
+        
+    } catch (PDOException $e) {
+        // Something went wrong, rollback the transaction
+        $pdo->rollBack();
+
+        $_SESSION['flash_message'] = "Database error: " . $e->getMessage();
+        $_SESSION['flash_message_type'] = "danger";
+    }
+
+    header("Location: manage_assignments.php");
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Manage Assignments</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Assignments - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .card-link {
+            text-decoration: none;
+            color: inherit;
+        }
+        .card-link .card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .card-link .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+    </style>
 </head>
-<body class="container py-4">
+<body>
+    <div class="container mt-4">
+        <h2 class="mb-4">Manage Assignments</h2>
+        <a href="dashboard.php" class="btn btn-secondary mb-4">&larr; Back to Dashboard</a>
+        <hr class="mb-4">
 
-    <h2>Assignments</h2>
+        <?php if ($flash_message): ?>
+            <div class="alert alert-<?= $flash_message_type ?>" role="alert">
+                <?= htmlspecialchars($flash_message) ?>
+            </div>
+        <?php endif; ?>
 
-    <?php if ($flash_message): ?>
-        <div class="alert alert-<?= htmlspecialchars($flash_message['type']) ?>">
-            <?= htmlspecialchars($flash_message['text']) ?>
-        </div>
-    <?php endif; ?>
-
-    <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Created At</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if ($assignments): ?>
+        <?php if (empty($assignments)): ?>
+            <div class="alert alert-info" role="alert">
+                No assignments created yet. <a href="create-assignment.php" class="alert-link">Create a new one.</a>
+            </div>
+        <?php else: ?>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 <?php foreach ($assignments as $assignment): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($assignment['id']) ?></td>
-                        <td><?= htmlspecialchars($assignment['name']) ?></td>
-                        <td><?= htmlspecialchars($assignment['created_at']) ?></td>
-                        <td>
-                            <a href="manage_assignments.php?delete=<?= $assignment['id'] ?>" 
-                               class="btn btn-sm btn-danger"
-                               onclick="return confirm('Are you sure you want to delete this assignment?')">
-                               Delete
-                            </a>
-                        </td>
-                    </tr>
+                    <div class="col">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <h3 class="card-title text-primary mb-3"><?= htmlspecialchars($assignment['name']) ?></h3>
+                                <div class="d-grid gap-2">
+                                    <a href="add-checkpoints.php?assignment_id=<?= $assignment['id'] ?>"
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-map-marker-alt me-2"></i> Add/View Checkpoints
+                                    </a>
+                                    <a href="generate-qrs.php?assignment_id=<?= $assignment['id'] ?>"
+                                       class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-qrcode me-2"></i> Generate QR Codes
+                                    </a>
+                                    <form action="delete_assignment.php" method="POST" onsubmit="return confirm('Are you sure you want to delete the assignment &quot;<?= htmlspecialchars($assignment['name']) ?>&quot;? This will also delete all its checkpoints and unassign all staff from it.');">
+                                        <input type="hidden" name="assignment_id" value="<?= $assignment['id'] ?>">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                            <i class="fas fa-trash-alt me-2"></i> Delete Assignment
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 <?php endforeach; ?>
-            <?php else: ?>
-                <tr><td colspan="4" class="text-center">No assignments found.</td></tr>
-            <?php endif; ?>
-        </tbody>
-    </table>
+            </div>
+        <?php endif; ?>
+    </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>
