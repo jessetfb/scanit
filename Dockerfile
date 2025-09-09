@@ -8,19 +8,32 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libpng-dev \
     libjpeg-dev \
+    libfreetype6-dev \
+    libwebp-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo pdo_pgsql zip gd
+# Configure and install PHP extensions
+RUN docker-php-ext-configure gd \
+        --with-jpeg \
+        --with-freetype \
+        --with-webp \
+    && docker-php-ext-install -j$(nproc) \
+        pdo \
+        pdo_pgsql \
+        zip \
+        gd
+
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
 
 # Set the working directory
 WORKDIR /var/www/html
 
-# Copy all application files first
+# Copy all application files
 COPY . /var/www/html/
 
 # Install Composer
 COPY --from=composer:latest /usr/local/bin/composer /usr/local/bin/composer
 
-# Run Composer to install dependencies
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
