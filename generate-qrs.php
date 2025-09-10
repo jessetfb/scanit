@@ -56,7 +56,7 @@ foreach ($checkpoints as $checkpoint) {
             ->writer(new PngWriter())
             ->data($data_to_encode)
             ->encoding(new Encoding('UTF-8'))
-            ->errorCorrectionLevel(new ErrorCorrectionLevelHigh()) // ✅ Correct usage
+            ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
             ->size(300)
             ->margin(10)
             ->build();
@@ -78,7 +78,6 @@ foreach ($checkpoints as $checkpoint) {
     }
 }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
