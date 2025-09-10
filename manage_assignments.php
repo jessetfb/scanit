@@ -1,61 +1,25 @@
 <?php
-// delete_assignment.php
+// manage_assignments.php
+// Admin page to view all assignments and link to their checkpoints, and now delete them.
 
 require_once 'check_auth.php';
 require_once 'db.php';
 
-// Ensure only admin can access this script
+// Ensure only admin can access this page
 if ($_SESSION['role'] !== 'admin') {
     header("Location: dashboard.php");
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignment_id'])) {
-    $assignmentId = filter_var($_POST['assignment_id'], FILTER_VALIDATE_INT);
+// Fetch all assignments
+$stmt = $pdo->query("SELECT id, name FROM assignments ORDER BY name ASC");
+$assignments = $stmt->fetchAll();
 
-    if ($assignmentId === false) {
-        $_SESSION['flash_message'] = "Invalid assignment ID.";
-        $_SESSION['flash_message_type'] = "danger";
-        header("Location: manage_assignments.php");
-        exit;
-    }
-
-    try {
-        // Start a transaction to ensure all or nothing happens
-        $pdo->beginTransaction();
-
-        // Step 1: Delete records from the child table 'user_assignments'
-        $sqlDeleteUserAssignments = "DELETE FROM user_assignments WHERE assignment_id = ?";
-        $stmtDeleteUserAssignments = $pdo->prepare($sqlDeleteUserAssignments);
-        $stmtDeleteUserAssignments->execute([$assignmentId]);
-
-        // Step 2: Delete records from the child table 'checkpoints'
-        $sqlDeleteCheckpoints = "DELETE FROM checkpoints WHERE assignment_id = ?";
-        $stmtDeleteCheckpoints = $pdo->prepare($sqlDeleteCheckpoints);
-        $stmtDeleteCheckpoints->execute([$assignmentId]);
-
-        // Step 3: Delete the assignment from the parent table 'assignments'
-        $sqlDeleteAssignment = "DELETE FROM assignments WHERE id = ?";
-        $stmtDeleteAssignment = $pdo->prepare($sqlDeleteAssignment);
-        $stmtDeleteAssignment->execute([$assignmentId]);
-
-        // If all queries were successful, commit the transaction
-        $pdo->commit();
-
-        $_SESSION['flash_message'] = "Assignment and all related data deleted successfully. 👍";
-        $_SESSION['flash_message_type'] = "success";
-        
-    } catch (PDOException $e) {
-        // Something went wrong, rollback the transaction
-        $pdo->rollBack();
-
-        $_SESSION['flash_message'] = "Database error: " . $e->getMessage();
-        $_SESSION['flash_message_type'] = "danger";
-    }
-
-    header("Location: manage_assignments.php");
-    exit;
-}
+// Handle flash messages from redirects
+$flash_message = $_SESSION['flash_message'] ?? '';
+$flash_message_type = $_SESSION['flash_message_type'] ?? '';
+unset($_SESSION['flash_message']); // Clear message after displaying
+unset($_SESSION['flash_message_type']);
 ?>
 
 <!DOCTYPE html>
