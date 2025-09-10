@@ -22,15 +22,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignment_id'])) {
             // Start transaction for safety
             $pdo->beginTransaction();
 
-            // Delete related user assignments first
-            $stmt = $pdo->prepare("DELETE FROM user_assignments WHERE assignment_id = ?");
+            // First, find all checkpoint IDs for this assignment
+            $stmt = $pdo->prepare("SELECT id FROM checkpoints WHERE assignment_id = ?");
             $stmt->execute([$assignment_id]);
+            $checkpoint_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            // If there are checkpoints, delete their related scan_logs first
+            if (!empty($checkpoint_ids)) {
+                $placeholders = implode(',', array_fill(0, count($checkpoint_ids), '?'));
+                $sql_delete_scan_logs = "DELETE FROM scan_logs WHERE checkpoint_id IN ($placeholders)";
+                $stmt = $pdo->prepare($sql_delete_scan_logs);
+                $stmt->execute($checkpoint_ids);
+            }
 
             // Delete related checkpoints
             $stmt = $pdo->prepare("DELETE FROM checkpoints WHERE assignment_id = ?");
             $stmt->execute([$assignment_id]);
 
-            // Set assignment_id = NULL in logs (if ON DELETE SET NULL not in schema)
+            // Delete related user assignments
+            $stmt = $pdo->prepare("DELETE FROM user_assignments WHERE assignment_id = ?");
+            $stmt->execute([$assignment_id]);
+
+            // Update logs to set assignment_id to NULL
             $stmt = $pdo->prepare("UPDATE logs SET assignment_id = NULL WHERE assignment_id = ?");
             $stmt->execute([$assignment_id]);
 
