@@ -77,6 +77,7 @@ try {
         'error' => 'Failed to generate QR code. (' . htmlspecialchars($e->getMessage()) . ')'
     ];
 }
+}
 ?>
 
 <!DOCTYPE html>
