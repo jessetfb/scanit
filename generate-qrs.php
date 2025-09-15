@@ -14,7 +14,7 @@ if (file_exists($autoloadPath)) {
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Encoding\Encoding;
-use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh; // ✅ Correct class
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevel;
 
 // Only admin can access
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -56,7 +56,7 @@ foreach ($checkpoints as $checkpoint) {
             ->writer(new PngWriter())
             ->data($data_to_encode)
             ->encoding(new Encoding('UTF-8'))
-            ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
+            ->errorCorrectionLevel(ErrorCorrectionLevel::high())
             ->size(300)
             ->margin(10)
             ->build();
