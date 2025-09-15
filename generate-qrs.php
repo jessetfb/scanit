@@ -14,7 +14,8 @@ if (file_exists($autoloadPath)) {
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Encoding\Encoding;
-use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevel;
+use Endroid\QrCode\ErrorCorrectionLevel;
+
 
 // Only admin can access
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
