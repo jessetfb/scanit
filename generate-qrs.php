@@ -51,31 +51,31 @@ foreach ($checkpoints as $checkpoint) {
     // Embed only the checkpoint ID in the QR code.
     $data_to_encode = (string)$checkpoint['id'];
 
-    try {
-        $result = Builder::create()
-            ->writer(new PngWriter())
-            ->data($data_to_encode)
-            ->encoding(new Encoding('UTF-8'))
-            ->errorCorrectionLevel(ErrorCorrectionLevel::high())
-            ->size(300)
-            ->margin(10)
-            ->build();
+try {
+    $builder = new Builder(
+        writer: new PngWriter(),
+        data: $data_to_encode,
+        encoding: new Encoding('UTF-8'),
+        errorCorrectionLevel: ErrorCorrectionLevel::High,
+        size: 300,
+        margin: 10
+    );
 
-        // Get image data as base64 string
-        $imageData = base64_encode($result->getString());
-        $qrCodes[] = [
-            'checkpoint_name' => $checkpoint['name'],
-            'image' => $imageData
-        ];
+    $result = $builder->build();
 
-    } catch (Throwable $e) {
-        error_log('Error generating QR for checkpoint ID ' . $checkpoint['id'] . ': ' . $e->getMessage());
-        $qrCodes[] = [
-            'checkpoint_name' => $checkpoint['name'],
-            'image' => null,
-            'error' => 'Failed to generate QR code. (' . htmlspecialchars($e->getMessage()) . ')'
-        ];
-    }
+    $imageData = base64_encode($result->getString());
+    $qrCodes[] = [
+        'checkpoint_name' => $checkpoint['name'],
+        'image' => $imageData
+    ];
+
+} catch (Throwable $e) {
+    error_log('Error generating QR for checkpoint ID ' . $checkpoint['id'] . ': ' . $e->getMessage());
+    $qrCodes[] = [
+        'checkpoint_name' => $checkpoint['name'],
+        'image' => null,
+        'error' => 'Failed to generate QR code. (' . htmlspecialchars($e->getMessage()) . ')'
+    ];
 }
 ?>
 
